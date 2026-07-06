@@ -635,16 +635,27 @@ function eliminarMovimiento(id) {
   renderizarMovimientos();
 }
 
-// Renderizar movimientos
 function renderizarMovimientos() {
   const periodo = document.querySelector('#movimientos .periodo-tab.active').textContent.trim().toLowerCase();
   const hoy = new Date();
-  let inicio = new Date();
+  hoy.setHours(0, 0, 0, 0); // Normalizar a medianoche
+  
+  let inicio = new Date(hoy);
 
-  if (periodo === 'semana') inicio.setDate(hoy.getDate() - 7);
-  else if (periodo === 'mes') inicio.setMonth(hoy.getMonth());
+  if (periodo === 'semana') {
+    inicio.setDate(hoy.getDate() - 7);
+  } else if (periodo === 'mes') {
+    inicio.setDate(1); // Primer día del mes actual
+  }
+  
+  inicio.setHours(0, 0, 0, 0); // Normalizar inicio a medianoche
 
-  const filtrados = data.movimientos.filter(m => new Date(m.fecha) >= inicio);
+  const filtrados = data.movimientos.filter(m => {
+    const fechaMovimiento = new Date(m.fecha);
+    fechaMovimiento.setHours(0, 0, 0, 0);
+    return fechaMovimiento >= inicio;
+  });
+
   const container = document.getElementById('movimientos-list');
 
   if (!filtrados.length) {
@@ -665,13 +676,6 @@ function renderizarMovimientos() {
     </div>
   `).join('');
 }
-
-function filtrarPeriodo(periodo) {
-  document.querySelectorAll('#movimientos .periodo-tab').forEach(t => t.classList.remove('active'));
-  event.target.classList.add('active');
-  renderizarMovimientos();
-}
-
 // Dashboard
 function actualizarUI() {
   const mesActual = new Date().toISOString().slice(0, 7);
