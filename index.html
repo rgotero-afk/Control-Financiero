@@ -626,12 +626,19 @@ function agregarMovimiento() {
   document.getElementById('monto').value = '';
   setearFecha();
   actualizarCategorias();
+  alert('✓ Movimiento agregado');
 }
 
 function eliminarMovimiento(id) {
   data.movimientos = data.movimientos.filter(m => m.id !== id);
   guardarDatos();
   actualizarUI();
+  renderizarMovimientos();
+}
+
+function filtrarPeriodo(periodo) {
+  document.querySelectorAll('#movimientos .periodo-tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
   renderizarMovimientos();
 }
 
@@ -647,6 +654,7 @@ function renderizarMovimientos() {
   } else if (periodo === 'mes') {
     inicio.setDate(1); // Primer día del mes actual
   }
+  // Si es 'hoy', inicio ya está en hoy
   
   inicio.setHours(0, 0, 0, 0); // Normalizar inicio a medianoche
 
@@ -667,7 +675,7 @@ function renderizarMovimientos() {
     <div class="movimiento">
       <div class="mov-info">
         <div class="mov-desc">${m.desc}</div>
-        <div class="mov-cat">${m.categoria} · ${new Date(m.fecha).toLocaleDateString('es-AR')}</div>
+        <div class="mov-cat">${m.categoria} · ${new Date(m.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })}</div>
       </div>
       <div class="mov-monto ${m.tipo === 'income' ? 'mov-income' : 'mov-expense'}">
         ${m.tipo === 'income' ? '+' : '-'}$${m.monto.toLocaleString('es-AR')}
@@ -676,6 +684,7 @@ function renderizarMovimientos() {
     </div>
   `).join('');
 }
+
 // Dashboard
 function actualizarUI() {
   const mesActual = new Date().toISOString().slice(0, 7);
