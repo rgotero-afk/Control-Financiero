@@ -389,8 +389,8 @@
     </div>
 
     <div class="form-group">
-      <label>Fecha</label>
-      <input type="date" id="fecha" placeholder="dd/mm/yyyy">
+      <label>Fecha (dd/mm/yyyy)</label>
+      <input type="text" id="fecha" placeholder="06/07/2026" maxlength="10">
     </div>
 
     <button class="btn-primary" onclick="agregarMovimiento()">✓ Agregar</button>
@@ -527,7 +527,13 @@ let data = {
   }
 };
 
-// Formatear fecha de ISO a dd/mm/yyyy
+// Convertir dd/mm/yyyy a yyyy-mm-dd
+function convertirFechaAISO(fechaDDMMYYYY) {
+  const [day, month, year] = fechaDDMMYYYY.split('/');
+  return `${year}-${month}-${day}`;
+}
+
+// Convertir yyyy-mm-dd a dd/mm/yyyy
 function formatearFecha(fechaISO) {
   if (!fechaISO) return '';
   const [year, month, day] = fechaISO.split('-');
@@ -555,7 +561,10 @@ function guardarDatos() {
 
 function setearFecha() {
   const hoy = new Date();
-  document.getElementById('fecha').valueAsDate = hoy;
+  const day = String(hoy.getDate()).padStart(2, '0');
+  const month = String(hoy.getMonth() + 1).padStart(2, '0');
+  const year = hoy.getFullYear();
+  document.getElementById('fecha').value = `${day}/${month}/${year}`;
 }
 
 // Navegación
@@ -610,16 +619,22 @@ function agregarMovimiento() {
   const categoria = document.getElementById('categoria').value;
   const desc = document.getElementById('desc').value.trim();
   const monto = parseFloat(document.getElementById('monto').value);
-  const fechaInput = document.getElementById('fecha').value; // Formato: yyyy-mm-dd
+  const fechaInput = document.getElementById('fecha').value.trim();
 
   if (!categoria || !desc || !monto || !fechaInput) {
     alert('Completá todos los campos');
     return;
   }
 
-  // Guardar fecha en formato ISO sin problemas de zona horaria
-  const [year, month, day] = fechaInput.split('-');
-  const fechaISO = `${year}-${month}-${day}`;
+  // Validar formato dd/mm/yyyy
+  const regexFecha = /^\d{2}\/\d{2}\/\d{4}$/;
+  if (!regexFecha.test(fechaInput)) {
+    alert('Formato de fecha inválido. Usa dd/mm/yyyy');
+    return;
+  }
+
+  // Convertir a ISO yyyy-mm-dd
+  const fechaISO = convertirFechaAISO(fechaInput);
 
   data.movimientos.push({
     id: Date.now(),
@@ -656,21 +671,17 @@ function filtrarPeriodo(periodo) {
 function renderizarMovimientos() {
   const periodo = document.querySelector('#movimientos .periodo-tab.active').textContent.trim().toLowerCase();
   const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
   
-  let inicio = new Date(hoy);
+  let inicio = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
 
   if (periodo === 'semana') {
-    inicio.setDate(hoy.getDate() - 7);
+    inicio = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - 7);
   } else if (periodo === 'mes') {
-    inicio.setDate(1);
+    inicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
   }
-  
-  inicio.setHours(0, 0, 0, 0);
 
   const filtrados = data.movimientos.filter(m => {
-    const fechaMovimiento = new Date(m.fecha);
-    fechaMovimiento.setHours(0, 0, 0, 0);
+    const fechaMovimiento = new Date(m.fecha + 'T00:00:00');
     return fechaMovimiento >= inicio;
   });
 
@@ -697,7 +708,8 @@ function renderizarMovimientos() {
 
 // Dashboard
 function actualizarUI() {
-  const mesActual = new Date().toISOString().slice(0, 7);
+  const hoy = new Date();
+  const mesActual = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
   const movMes = data.movimientos.filter(m => m.fecha.startsWith(mesActual));
   
   const ingresos = movMes.filter(m => m.tipo === 'income').reduce((s, m) => s + m.monto, 0);
@@ -740,7 +752,7 @@ function actualizarReportes() {
   if (periodo === 'trimestre') inicio.setMonth(inicio.getMonth() - 3);
   else inicio.setMonth(inicio.getMonth());
 
-  const filtrados = data.movimientos.filter(m => new Date(m.fecha) >= inicio);
+  const filtrados = data.movimientos.filter(m => new Date(m.fecha + 'T00:00:00') >= inicio);
   
   const ingresos = filtrados.filter(m => m.tipo === 'income').reduce((s, m) => s + m.monto, 0);
   const gastos = filtrados.filter(m => m.tipo === 'expense').reduce((s, m) => s + m.monto, 0);
