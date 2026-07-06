@@ -390,19 +390,8 @@
 
     <div class="form-group">
       <label>Fecha</label>
-      <input type="date" id="fecha">
-      <input type="text" id="fechaFormato" placeholder="dd/mm/yyyy" readonly>
+      <input type="date" id="fecha" placeholder="dd/mm/yyyy">
     </div>
-
-    <script>
-       document.getElementById('fecha').addEventListener('change', function() {
-        const fechaInput = this.value; // Formato: yyyy-mm-dd
-        if (fechaInput) {
-        const [year, month, day] = fechaInput.split('-');
-       document.getElementById('fechaFormato').value = `${day}/${month}/${year}`;
-        }
-        });
-    </script>
 
     <button class="btn-primary" onclick="agregarMovimiento()">✓ Agregar</button>
   </div>
