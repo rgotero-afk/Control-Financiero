@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Control Financiero">
+<title>Control Financiero — Rober</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect fill='%23238636' width='180' height='180'/><text x='90' y='130' font-size='100' fill='white' text-anchor='middle' font-weight='bold'>💰</text></svg>">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #0d1117;
+    color: #e6edf3;
+    min-height: 100vh;
+    padding-bottom: 80px;
+    padding-top: 60px;
+  }
+
+  /* Header fijo */
+  header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: #161b22;
+    border-bottom: 1px solid #30363d;
+    padding: 14px 16px;
+    z-index: 100;
+  }
+  header h1 { font-size: 16px; font-weight: 700; }
+  header p { font-size: 11px; color: #8b949e; margin-top: 2px; }
+
+  /* Bottom nav */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #161b22;
+    border-top: 1px solid #30363d;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    height: 60px;
+    z-index: 100;
+  }
+  .nav-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    background: none;
+    border: none;
+    color: #8b949e;
+    cursor: pointer;
+    font-size: 11px;
+    padding: 8px;
+  }
+  .nav-btn.active { color: #58a6ff; }
+  .nav-btn-icon { font-size: 20px; }
+
+  .page {
+    display: none;
+    padding: 16px;
+  }
+  .page.active { display: block; }
+
+  /* Dashboard */
+  .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .kpi {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .kpi-label { font-size: 11px; color: #8b949e; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.8px; }
+  .kpi-value { font-size: 20px; font-weight: 700; }
+  .kpi-sub { font-size: 10px; color: #8b949e; margin-top: 4px; }
+  .kpi.positive .kpi-value { color: #3fb950; }
+  .kpi.negative .kpi-value { color: #f85149; }
+  .kpi.neutral .kpi-value { color: #58a6ff; }
+
+  .section {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+  .section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; color: #8b949e; margin-bottom: 12px; letter-spacing: 0.8px; }
+
+  .progress-bar {
+    background: #21262d;
+    border-radius: 4px;
+    height: 6px;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+  .progress-fill {
+    background: #238636;
+    height: 100%;
+    transition: width 0.3s;
+  }
+
+  .objective-item {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 8px;
+  }
+  .obj-title { font-size: 12px; font-weight: 600; color: #c9d1d9; }
+  .obj-meta { font-size: 10px; color: #8b949e; margin-top: 2px; }
+
+  /* Agregar gasto */
+  .add-form {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 16px;
+  }
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .form-group:last-child { margin-bottom: 0; }
+  
+  label { font-size: 12px; font-weight: 600; color: #c9d1d9; }
+  input, select {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    color: #e6edf3;
+    padding: 8px 10px;
+    font-size: 12px;
+    font-family: inherit;
+  }
+  input:focus, select:focus {
+    outline: none;
+    border-color: #58a6ff;
+  }
+
+  .btn-primary {
+    background: #238636;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+  }
+  .btn-primary:active { background: #2ea043; }
+
+  .btn-secondary {
+    background: #21262d;
+    color: #8b949e;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+  }
+
+  /* Movimientos */
+  .movimientos-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .movimiento {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+  }
+  .mov-info { flex: 1; }
+  .mov-desc { font-size: 12px; font-weight: 600; color: #c9d1d9; }
+  .mov-cat { font-size: 10px; color: #8b949e; margin-top: 2px; }
+  .mov-monto { font-size: 12px; font-weight: 700; text-align: right; }
+  .mov-income { color: #3fb950; }
+  .mov-expense { color: #f85149; }
+  .mov-del {
+    background: none;
+    border: none;
+    color: #484f58;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px;
+  }
+  .mov-del:active { color: #f85149; }
+
+  .empty { color: #484f58; font-size: 12px; text-align: center; padding: 20px; }
+
+  /* Resumen período */
+  .periodo-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .periodo-tab {
+    flex: 1;
+    background: #21262d;
+    color: #8b949e;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .periodo-tab.active {
+    background: #238636;
+    color: #fff;
+  }
+
+  .resumen-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    padding: 6px 0;
+    border-bottom: 1px solid #21262d;
+  }
+  .resumen-item:last-child { border-bottom: none; }
+  .resumen-item.total {
+    font-weight: 700;
+    color: #fff;
+    border-top: 1px solid #21262d;
+    padding-top: 8px;
+    margin-top: 8px;
+  }
+  .resumen-item.income { color: #3fb950; }
+  .resumen-item.expense { color: #f85149; }
+
+  .config-section {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+  .config-title { font-size: 12px; font-weight: 700; color: #c9d1d9; margin-bottom: 10px; }
+
+  .info-box {
+    background: #0d1117;
+    border-left: 3px solid #58a6ff;
+    border-radius: 0 6px 6px 0;
+    padding: 10px 12px;
+    font-size: 11px;
+    color: #8b949e;
+    margin-bottom: 12px;
+    line-height: 1.5;
+  }
+
+  @media (max-width: 640px) {
+    .kpi-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>💰 Control Financiero</h1>
+  <p>Rober — Tu tablero de control personal</p>
+</header>
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="page active">
+  <div class="kpi-grid">
+    <div class="kpi neutral">
+      <div class="kpi-label">Capital Invertido</div>
+      <div class="kpi-value" id="kpi-capital">$8.637M</div>
+      <div class="kpi-sub">IOL + Balanz</div>
+    </div>
+    <div class="kpi neutral">
+      <div class="kpi-label">Objetivo 12m</div>
+      <div class="kpi-value" id="kpi-objetivo">$20M</div>
+      <div class="kpi-sub">Falta: $11.363M</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Fondo Emergencia</div>
+      <div class="kpi-value" id="kpi-fondo">$0</div>
+      <div class="kpi-sub">Target: $750K</div>
+    </div>
+    <div class="kpi neutral">
+      <div class="kpi-label">Mes Actual</div>
+      <div class="kpi-value" id="kpi-balance">$0</div>
+      <div class="kpi-sub">Ingresos - Gastos</div>
+    </div>
+  </div>
+
+  <!-- Objetivos -->
+  <div class="section">
+    <div class="section-title">🎯 Objetivos 12 meses</div>
+    
+    <div class="objective-item">
+      <div class="obj-title">Cartera a $20M</div>
+      <div class="obj-meta">Progreso: <span id="obj-cartera">43%</span> | Falta: $11.363M</div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="obj-cartera-bar" style="width: 43%"></div>
+      </div>
+    </div>
+
+    <div class="objective-item">
+      <div class="obj-title">Fondo Emergencia $750K</div>
+      <div class="obj-meta">Progreso: <span id="obj-fondo">0%</span> | Acumulado: $0</div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="obj-fondo-bar" style="width: 0%"></div>
+      </div>
+    </div>
+
+    <div class="objective-item">
+      <div class="obj-title">Cambiar Camioneta</div>
+      <div class="obj-meta">Timeline: Corto plazo | Estado: En proceso</div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="obj-auto-bar" style="width: 40%; background: #d29922;"></div>
+      </div>
+    </div>
+
+    <div class="objective-item">
+      <div class="obj-title">Libertad Financiera</div>
+      <div class="obj-meta">Ingresos inversión >= Gastos mensuales</div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="obj-libertad-bar" style="width: 20%; background: #58a6ff;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Resumen rápido -->
+  <div class="section">
+    <div class="section-title">📊 Resumen Este Mes</div>
+    <div class="resumen-item income">
+      <span>Ingresos:</span>
+      <span id="mes-ingresos">$0</span>
+    </div>
+    <div class="resumen-item expense">
+      <span>Gastos:</span>
+      <span id="mes-gastos">$0</span>
+    </div>
+    <div class="resumen-item total">
+      <span>Balance:</span>
+      <span id="mes-balance">$0</span>
+    </div>
+  </div>
+</div>
+
+<!-- AGREGAR MOVIMIENTO -->
+<div id="agregar" class="page">
+  <div class="add-form">
+    <div class="form-group">
+      <label>Tipo de movimiento</label>
+      <select id="tipo">
+        <option value="expense">💸 Gasto</option>
+        <option value="income">💰 Ingreso</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Categoría</label>
+      <select id="categoria">
+        <option value="">-- Seleccionar --</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Descripción</label>
+      <input type="text" id="desc" placeholder="Ej: Compra en Carrefour">
+    </div>
+
+    <div class="form-group">
+      <label>Monto (ARS)</label>
+      <input type="number" id="monto" placeholder="0" step="1000">
+    </div>
+
+    <div class="form-group">
+      <label>Fecha</label>
+      <input type="date" id="fecha">
+    </div>
+
+    <button class="btn-primary" onclick="agregarMovimiento()">✓ Agregar</button>
+  </div>
+</div>
+
+<!-- MOVIMIENTOS -->
+<div id="movimientos" class="page">
+  <div class="periodo-tabs">
+    <button class="periodo-tab active" onclick="filtrarPeriodo('hoy')">Hoy</button>
+    <button class="periodo-tab" onclick="filtrarPeriodo('semana')">Semana</button>
+    <button class="periodo-tab" onclick="filtrarPeriodo('mes')">Mes</button>
+  </div>
+
+  <div class="movimientos-list" id="movimientos-list"></div>
+</div>
+
+<!-- REPORTES -->
+<div id="reportes" class="page">
+  <div class="info-box">
+    📊 Análisis de gastos e ingresos por período y categoría
+  </div>
+
+  <div class="periodo-tabs">
+    <button class="periodo-tab active" onclick="cambiarReportePeriodo('mes')">Mes</button>
+    <button class="periodo-tab" onclick="cambiarReportePeriodo('trimestre')">Trimestre</button>
+  </div>
+
+  <div class="section">
+    <div class="section-title">💰 Por Tipo</div>
+    <div class="resumen-item income">
+      <span>Ingresos totales:</span>
+      <span id="rep-ingresos">$0</span>
+    </div>
+    <div class="resumen-item expense">
+      <span>Gastos totales:</span>
+      <span id="rep-gastos">$0</span>
+    </div>
+    <div class="resumen-item total">
+      <span>Balance:</span>
+      <span id="rep-balance">$0</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">📂 Gastos por Categoría</div>
+    <div id="rep-categorias"></div>
+  </div>
+
+  <div class="section">
+    <button class="btn-secondary" onclick="exportarJSON()">📤 Exportar como JSON</button>
+  </div>
+</div>
+
+<!-- CONFIGURACIÓN -->
+<div id="config" class="page">
+  <div class="info-box">
+    ⚙️ Personaliza tus categorías y datos. Todo se guarda automáticamente en tu navegador.
+  </div>
+
+  <div class="config-section">
+    <div class="config-title">Categorías de Gastos</div>
+    <div style="font-size: 11px; color: #8b949e; margin-bottom: 10px;" id="lista-gastos-cat"></div>
+    <input type="text" id="nueva-cat-gasto" placeholder="Nueva categoría" style="margin-bottom: 6px;">
+    <button class="btn-secondary" onclick="agregarCategoriaGasto()">+ Agregar</button>
+  </div>
+
+  <div class="config-section">
+    <div class="config-title">Categorías de Ingresos</div>
+    <div style="font-size: 11px; color: #8b949e; margin-bottom: 10px;" id="lista-ingresos-cat"></div>
+    <input type="text" id="nueva-cat-ingreso" placeholder="Nueva categoría" style="margin-bottom: 6px;">
+    <button class="btn-secondary" onclick="agregarCategoriaIngreso()">+ Agregar</button>
+  </div>
+
+  <div class="config-section">
+    <div class="config-title">Datos Base</div>
+    <div class="form-group">
+      <label>Capital Invertido (ARS)</label>
+      <input type="number" id="config-capital" value="8637000" step="100000">
+    </div>
+    <div class="form-group">
+      <label>Objetivo Cartera (ARS)</label>
+      <input type="number" id="config-objetivo" value="20000000" step="100000">
+    </div>
+    <div class="form-group">
+      <label>Target Fondo Emergencia (ARS)</label>
+      <input type="number" id="config-fondo-target" value="750000" step="50000">
+    </div>
+    <button class="btn-secondary" onclick="guardarConfiguracion()">💾 Guardar</button>
+  </div>
+
+  <div class="config-section">
+    <button class="btn-secondary" onclick="if(confirm('¿Limpiar todos los datos?')) limpiarTodo()">🗑️ Limpiar todo</button>
+  </div>
+</div>
+
+<!-- Bottom Navigation -->
+<div class="bottom-nav">
+  <button class="nav-btn active" onclick="irPagina('dashboard')">
+    <div class="nav-btn-icon">📊</div>
+    <div>Dashboard</div>
+  </button>
+  <button class="nav-btn" onclick="irPagina('agregar')">
+    <div class="nav-btn-icon">➕</div>
+    <div>Agregar</div>
+  </button>
+  <button class="nav-btn" onclick="irPagina('movimientos')">
+    <div class="nav-btn-icon">📝</div>
+    <div>Movimientos</div>
+  </button>
+  <button class="nav-btn" onclick="irPagina('reportes')">
+    <div class="nav-btn-icon">📈</div>
+    <div>Reportes</div>
+  </button>
+  <button class="nav-btn" onclick="irPagina('config')">
+    <div class="nav-btn-icon">⚙️</div>
+    <div>Config</div>
+  </button>
+</div>
+
+<script>
+// Datos
+let data = {
+  movimientos: [],
+  categorias: {
+    expense: ['Prima a prima', 'Supermercado', 'Carnicería', 'Combustible', 'Servicios', 'Tarjeta crédito', 'Hijos', 'Salud', 'Otros'],
+    income: ['Sueldo', 'Per diems', 'Otros ingresos']
+  },
+  config: {
+    capital: 8637000,
+    objetivo: 20000000,
+    fondoTarget: 750000,
+    fondoActual: 0
+  }
+};
+
+// Cargar datos
+function cargarDatos() {
+  try {
+    const saved = localStorage.getItem('rober_control_financiero');
+    if (saved) {
+      data = JSON.parse(saved);
+    }
+  } catch (e) {}
+  
+  setearFecha();
+  actualizarUI();
+}
+
+function guardarDatos() {
+  try {
+    localStorage.setItem('rober_control_financiero', JSON.stringify(data));
+  } catch (e) {}
+}
+
+function setearFecha() {
+  const hoy = new Date();
+  document.getElementById('fecha').valueAsDate = hoy;
+}
+
+// Navegación
+function irPagina(pagina) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(pagina).classList.add('active');
+  
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  event.target.closest('.nav-btn').classList.add('active');
+
+  if (pagina === 'reportes') actualizarReportes();
+  if (pagina === 'movimientos') renderizarMovimientos();
+  if (pagina === 'config') actualizarConfigUI();
+}
+
+// Categorías
+function actualizarCategorias() {
+  const select = document.getElementById('categoria');
+  const tipo = document.getElementById('tipo').value;
+  const cats = data.categorias[tipo];
+  select.innerHTML = '<option value="">-- Seleccionar --</option>' + 
+    cats.map(c => `<option value="${c}">${c}</option>`).join('');
+}
+
+document.getElementById('tipo').addEventListener('change', actualizarCategorias);
+
+function agregarCategoriaGasto() {
+  const nueva = document.getElementById('nueva-cat-gasto').value.trim();
+  if (nueva && !data.categorias.expense.includes(nueva)) {
+    data.categorias.expense.push(nueva);
+    guardarDatos();
+    actualizarCategorias();
+    document.getElementById('nueva-cat-gasto').value = '';
+    actualizarConfigUI();
+  }
+}
+
+function agregarCategoriaIngreso() {
+  const nueva = document.getElementById('nueva-cat-ingreso').value.trim();
+  if (nueva && !data.categorias.income.includes(nueva)) {
+    data.categorias.income.push(nueva);
+    guardarDatos();
+    actualizarCategorias();
+    document.getElementById('nueva-cat-ingreso').value = '';
+    actualizarConfigUI();
+  }
+}
+
+// Agregar movimiento
+function agregarMovimiento() {
+  const tipo = document.getElementById('tipo').value;
+  const categoria = document.getElementById('categoria').value;
+  const desc = document.getElementById('desc').value.trim();
+  const monto = parseFloat(document.getElementById('monto').value);
+  const fecha = document.getElementById('fecha').value;
+
+  if (!categoria || !desc || !monto || !fecha) {
+    alert('Completá todos los campos');
+    return;
+  }
+
+  data.movimientos.push({
+    id: Date.now(),
+    tipo,
+    categoria,
+    desc,
+    monto,
+    fecha
+  });
+
+  guardarDatos();
+  actualizarUI();
+  
+  document.getElementById('desc').value = '';
+  document.getElementById('monto').value = '';
+  setearFecha();
+  actualizarCategorias();
+}
+
+function eliminarMovimiento(id) {
+  data.movimientos = data.movimientos.filter(m => m.id !== id);
+  guardarDatos();
+  actualizarUI();
+  renderizarMovimientos();
+}
+
+// Renderizar movimientos
+function renderizarMovimientos() {
+  const periodo = document.querySelector('#movimientos .periodo-tab.active').textContent.trim().toLowerCase();
+  const hoy = new Date();
+  let inicio = new Date();
+
+  if (periodo === 'semana') inicio.setDate(hoy.getDate() - 7);
+  else if (periodo === 'mes') inicio.setMonth(hoy.getMonth());
+
+  const filtrados = data.movimientos.filter(m => new Date(m.fecha) >= inicio);
+  const container = document.getElementById('movimientos-list');
+
+  if (!filtrados.length) {
+    container.innerHTML = '<div class="empty">Sin movimientos en este período</div>';
+    return;
+  }
+
+  container.innerHTML = filtrados.sort((a, b) => new Date(b.fecha) - new Date(a.fecha)).map(m => `
+    <div class="movimiento">
+      <div class="mov-info">
+        <div class="mov-desc">${m.desc}</div>
+        <div class="mov-cat">${m.categoria} · ${new Date(m.fecha).toLocaleDateString('es-AR')}</div>
+      </div>
+      <div class="mov-monto ${m.tipo === 'income' ? 'mov-income' : 'mov-expense'}">
+        ${m.tipo === 'income' ? '+' : '-'}$${m.monto.toLocaleString('es-AR')}
+      </div>
+      <button class="mov-del" onclick="eliminarMovimiento(${m.id})">×</button>
+    </div>
+  `).join('');
+}
+
+function filtrarPeriodo(periodo) {
+  document.querySelectorAll('#movimientos .periodo-tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  renderizarMovimientos();
+}
+
+// Dashboard
+function actualizarUI() {
+  const mesActual = new Date().toISOString().slice(0, 7);
+  const movMes = data.movimientos.filter(m => m.fecha.startsWith(mesActual));
+  
+  const ingresos = movMes.filter(m => m.tipo === 'income').reduce((s, m) => s + m.monto, 0);
+  const gastos = movMes.filter(m => m.tipo === 'expense').reduce((s, m) => s + m.monto, 0);
+  const balance = ingresos - gastos;
+
+  document.getElementById('mes-ingresos').textContent = '$' + ingresos.toLocaleString('es-AR');
+  document.getElementById('mes-gastos').textContent = '$' + gastos.toLocaleString('es-AR');
+  document.getElementById('mes-balance').textContent = '$' + balance.toLocaleString('es-AR');
+  
+  document.getElementById('kpi-balance').textContent = '$' + balance.toLocaleString('es-AR');
+  document.getElementById('kpi-balance').parentElement.className = balance >= 0 ? 'kpi positive' : 'kpi negative';
+
+  // Fondo emergencia
+  const fondoAct = data.config.fondoActual;
+  const fondoTarget = data.config.fondoTarget;
+  const fondoPct = Math.round((fondoAct / fondoTarget) * 100);
+  
+  document.getElementById('kpi-fondo').textContent = '$' + fondoAct.toLocaleString('es-AR');
+  document.getElementById('obj-fondo').textContent = fondoPct + '%';
+  document.getElementById('obj-fondo-bar').style.width = fondoPct + '%';
+
+  // Objetivo cartera
+  const capital = data.config.capital;
+  const objetivo = data.config.objetivo;
+  const cartPct = Math.round((capital / objetivo) * 100);
+  const cartFalta = objetivo - capital;
+  
+  document.getElementById('obj-cartera').textContent = cartPct + '%';
+  document.getElementById('obj-cartera-bar').style.width = cartPct + '%';
+  document.getElementById('kpi-objetivo').textContent = '$' + objetivo.toLocaleString('es-AR');
+  document.querySelector('.kpi:nth-child(2) .kpi-sub').textContent = 'Falta: $' + cartFalta.toLocaleString('es-AR');
+}
+
+// Reportes
+function actualizarReportes() {
+  const periodo = document.querySelector('#reportes .periodo-tab.active').textContent.trim();
+  let inicio = new Date();
+  
+  if (periodo === 'trimestre') inicio.setMonth(inicio.getMonth() - 3);
+  else inicio.setMonth(inicio.getMonth());
+
+  const filtrados = data.movimientos.filter(m => new Date(m.fecha) >= inicio);
+  
+  const ingresos = filtrados.filter(m => m.tipo === 'income').reduce((s, m) => s + m.monto, 0);
+  const gastos = filtrados.filter(m => m.tipo === 'expense').reduce((s, m) => s + m.monto, 0);
+  const balance = ingresos - gastos;
+
+  document.getElementById('rep-ingresos').textContent = '$' + ingresos.toLocaleString('es-AR');
+  document.getElementById('rep-gastos').textContent = '$' + gastos.toLocaleString('es-AR');
+  document.getElementById('rep-balance').textContent = '$' + balance.toLocaleString('es-AR');
+
+  // Por categoría
+  const porCat = {};
+  filtrados.filter(m => m.tipo === 'expense').forEach(m => {
+    porCat[m.categoria] = (porCat[m.categoria] || 0) + m.monto;
+  });
+
+  const container = document.getElementById('rep-categorias');
+  if (Object.keys(porCat).length === 0) {
+    container.innerHTML = '<div class="empty">Sin gastos en este período</div>';
+  } else {
+    container.innerHTML = Object.entries(porCat).sort((a, b) => b[1] - a[1]).map(([cat, monto]) => `
+      <div class="resumen-item expense">
+        <span>${cat}</span>
+        <span>$${monto.toLocaleString('es-AR')}</span>
+      </div>
+    `).join('');
+  }
+}
+
+function cambiarReportePeriodo(periodo) {
+  document.querySelectorAll('#reportes .periodo-tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  actualizarReportes();
+}
+
+// Configuración
+function actualizarConfigUI() {
+  document.getElementById('lista-gastos-cat').textContent = data.categorias.expense.join(', ');
+  document.getElementById('lista-ingresos-cat').textContent = data.categorias.income.join(', ');
+}
+
+function guardarConfiguracion() {
+  data.config.capital = parseFloat(document.getElementById('config-capital').value);
+  data.config.objetivo = parseFloat(document.getElementById('config-objetivo').value);
+  data.config.fondoTarget = parseFloat(document.getElementById('config-fondo-target').value);
+  guardarDatos();
+  actualizarUI();
+  alert('Configuración guardada');
+}
+
+function exportarJSON() {
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `control_financiero_rober_${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+}
+
+function limpiarTodo() {
+  data = { movimientos: [], categorias: { expense: ['Prima a prima', 'Supermercado', 'Carnicería', 'Combustible', 'Servicios', 'Tarjeta crédito', 'Hijos', 'Salud', 'Otros'], income: ['Sueldo', 'Per diems', 'Otros ingresos'] }, config: { capital: 8637000, objetivo: 20000000, fondoTarget: 750000, fondoActual: 0 } };
+  guardarDatos();
+  actualizarUI();
+  alert('Datos limpiados');
+}
+
+// Iniciar
+cargarDatos();
+actualizarCategorias();
+</script>
+
+</body>
+</html>
