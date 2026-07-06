@@ -527,6 +527,13 @@ let data = {
   }
 };
 
+// Formatear fecha de ISO a dd/mm/yyyy
+function formatearFecha(fechaISO) {
+  if (!fechaISO) return '';
+  const [year, month, day] = fechaISO.split('-');
+  return `${day}/${month}/${year}`;
+}
+
 // Cargar datos
 function cargarDatos() {
   try {
@@ -603,12 +610,16 @@ function agregarMovimiento() {
   const categoria = document.getElementById('categoria').value;
   const desc = document.getElementById('desc').value.trim();
   const monto = parseFloat(document.getElementById('monto').value);
-  const fecha = document.getElementById('fecha').value;
+  const fechaInput = document.getElementById('fecha').value; // Formato: yyyy-mm-dd
 
-  if (!categoria || !desc || !monto || !fecha) {
+  if (!categoria || !desc || !monto || !fechaInput) {
     alert('Completá todos los campos');
     return;
   }
+
+  // Guardar fecha en formato ISO sin problemas de zona horaria
+  const [year, month, day] = fechaInput.split('-');
+  const fechaISO = `${year}-${month}-${day}`;
 
   data.movimientos.push({
     id: Date.now(),
@@ -616,7 +627,7 @@ function agregarMovimiento() {
     categoria,
     desc,
     monto,
-    fecha
+    fecha: fechaISO
   });
 
   guardarDatos();
@@ -645,18 +656,17 @@ function filtrarPeriodo(periodo) {
 function renderizarMovimientos() {
   const periodo = document.querySelector('#movimientos .periodo-tab.active').textContent.trim().toLowerCase();
   const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0); // Normalizar a medianoche
+  hoy.setHours(0, 0, 0, 0);
   
   let inicio = new Date(hoy);
 
   if (periodo === 'semana') {
     inicio.setDate(hoy.getDate() - 7);
   } else if (periodo === 'mes') {
-    inicio.setDate(1); // Primer día del mes actual
+    inicio.setDate(1);
   }
-  // Si es 'hoy', inicio ya está en hoy
   
-  inicio.setHours(0, 0, 0, 0); // Normalizar inicio a medianoche
+  inicio.setHours(0, 0, 0, 0);
 
   const filtrados = data.movimientos.filter(m => {
     const fechaMovimiento = new Date(m.fecha);
@@ -675,7 +685,7 @@ function renderizarMovimientos() {
     <div class="movimiento">
       <div class="mov-info">
         <div class="mov-desc">${m.desc}</div>
-        <div class="mov-cat">${m.categoria} · ${new Date(m.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })}</div>
+        <div class="mov-cat">${m.categoria} · ${formatearFecha(m.fecha)}</div>
       </div>
       <div class="mov-monto ${m.tipo === 'income' ? 'mov-income' : 'mov-expense'}">
         ${m.tipo === 'income' ? '+' : '-'}$${m.monto.toLocaleString('es-AR')}
